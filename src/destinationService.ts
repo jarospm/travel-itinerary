@@ -5,8 +5,9 @@ export const getDestinationInfo = async (countryName: string) => {
     const data = await response.json();
     return {
       currency: Object.keys(data[0].currencies)[0],
-      flag: data[0].flag
+      flag: data[0].flag,
     };
   } catch (error) {
     throw new Error('Could not fetch country data');
-} };
+  }
+};
