@@ -1,7 +1,17 @@
-import { Trip } from './models.js';
+import { Trip, Activity } from './models.js';
 
 export const calculateTotalCost = (trip: Trip): number => {
   return trip.activities.reduce((sum, activity) => {
     return sum + activity.cost;
   }, 0);
+};
+
+export const getActivitiesByDate = (trip: Trip, date: Date): Activity[] => {
+  return trip.activities.filter((activity) => {
+    return (
+      activity.startTime.getFullYear() === date.getFullYear() &&
+      activity.startTime.getMonth() === date.getMonth() &&
+      activity.startTime.getDate() === date.getDate()
+    );
+  });
 };
