@@ -6,6 +6,17 @@ export const calculateTotalCost = (trip: Trip): number => {
   }, 0);
 };
 
+export const createTrip = (
+  id: string,
+  destination: string,
+  startDate: Date,
+): Trip => ({
+  id,
+  destination,
+  startDate,
+  activities: [],
+});
+
 export const getHighCostActivities = (
   trip: Trip,
   minimumCost: number,
