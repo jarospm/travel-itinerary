@@ -12,3 +12,13 @@ export const getHighCostActivities = (
 ): Activity[] => {
   return trip.activities.filter((activity) => activity.cost >= minimumCost);
 };
+
+export const getActivitiesByDate = (trip: Trip, date: Date): Activity[] => {
+  return trip.activities.filter((activity) => {
+    return (
+      activity.startTime.getFullYear() === date.getFullYear() &&
+      activity.startTime.getMonth() === date.getMonth() &&
+      activity.startTime.getDate() === date.getDate()
+    );
+  });
+};
