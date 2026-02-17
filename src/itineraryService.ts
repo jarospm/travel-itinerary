@@ -1,4 +1,4 @@
-import { Trip } from './models.js';
+import { Trip, Activity } from './models.js';
 
 export const calculateTotalCost = (trip: Trip): number => {
   return trip.activities.reduce((sum, activity) => {
@@ -6,13 +6,8 @@ export const calculateTotalCost = (trip: Trip): number => {
   }, 0);
 };
 
-export const createTrip = (
-  id: string,
-  destination: string,
-  startDate: Date,
-): Trip => ({
-  id,
-  destination,
-  startDate,
-  activities: [],
-});
+export const sortActivitiesChronologically = (trip: Trip): Activity[] => {
+  return [...trip.activities].sort(
+    (a, b) => a.startTime.getTime() - b.startTime.getTime(),
+  );
+};
