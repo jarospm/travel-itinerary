@@ -1,3 +1,5 @@
+import { addActivity } from './itineraryService.js';
+
 import inquirer from 'inquirer';
 const mainMenu = async () => {
   const answers = await inquirer.prompt([
@@ -11,3 +13,6 @@ const mainMenu = async () => {
   // Handle user choices here
 };
 mainMenu();
+
+const activities = addActivity(trip, activity);
+console.log(`Added! You now have ${activities.length} activities.`);
