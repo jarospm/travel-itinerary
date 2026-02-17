@@ -47,6 +47,8 @@ export const sortActivitiesChronologically = (trip: Trip): Activity[] => {
   );
 };
 
-export const addActivity = (trip: Trip, activity: Activity): void => {
+export const addActivity = (trip: Trip, activity: Activity): Activity[] => {
+  const updated = [...trip.activities, activity];
   trip.activities.push(activity);
+  return updated;
 };
