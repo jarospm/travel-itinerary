@@ -39,3 +39,9 @@ export const filterActivitiesByCategory = (
 ): Activity[] => {
   return trip.activities.filter((activity) => activity.category === category);
 };
+
+export const sortActivitiesChronologically = (trip: Trip): Activity[] => {
+  return [...trip.activities].sort(
+    (a, b) => a.startTime.getTime() - b.startTime.getTime(),
+  );
+};
