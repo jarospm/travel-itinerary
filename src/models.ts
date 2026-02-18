@@ -10,4 +10,5 @@ export type Trip = {
   destination: string;
   startDate: Date;
   activities: Activity[];
+  budget?: number;
 };
