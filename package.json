@@ -4,14 +4,18 @@
   "description": "A collaborative CLI application for planning trips, managing activities, and tracking travel expenses",
   "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "ts-node src/index.ts",
-    "dev": "ts-node src/index.ts",
+    "start": "tsx src/cli.ts",
+    "dev": "tsx src/cli.ts",
     "build": "tsc",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
-  "keywords": ["travel", "itinerary", "expense-tracker", "cli"],
+  "keywords": [
+    "travel",
+    "itinerary",
+    "expense-tracker",
+    "cli"
+  ],
   "author": "",
   "license": "ISC",
   "type": "module",

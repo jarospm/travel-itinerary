@@ -10,7 +10,9 @@ This project helps travelers organize their journey by creating trip itineraries
 
 - **Trip Planning**: Create trips with destinations and start dates
 - **Activity Management**: Add activities with names, costs, categories, and timing
-- **Budget Tracking**: Calculate total trip costs and identify high-expense activities
+- **Cost Calculation**: Calculate total trip costs
+- **Budget Tracking**: Set budget limits, track remaining budget, and get spending breakdowns by category
+- **High-Cost Detection**: Identify activities exceeding a cost threshold
 - **Smart Filtering**: Filter activities by category (food, transport, sightseeing)
 - **Daily Schedule**: View activities organized by specific days
 - **Chronological Sorting**: See your itinerary in time order
@@ -41,10 +43,10 @@ npm run dev
 
 ```
 src/
-├── models.ts              # TypeScript type definitions
-├── services/
-│   ├── destinationService.ts  # API calls for country data
-│   └── itineraryService.ts    # Trip and activity logic
+├── models.ts              # TypeScript type definitions (Trip, Activity)
+├── itineraryService.ts    # Trip and activity logic
+├── destinationService.ts  # API calls for country data
+├── budgetService.ts       # Budget tracking and spending breakdowns
 └── cli.ts                 # Command-line interface
 ```
 
