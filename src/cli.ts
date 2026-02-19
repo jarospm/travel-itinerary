@@ -188,3 +188,191 @@ const selectActiveTrip = async (): Promise<void> => {
   console.log(`\nActive trip: ${active ? active.destination : 'None'}\n`);
   await pause();
 };
+
+// ACTIVITY ACTIONS
+const actionAddActivity = async (): Promise<void> => {
+  const trip = await requireActiveTrip();
+  if (!trip) return;
+
+  const answers = (await inquirer.prompt([
+    {
+      type: 'input',
+      name: 'name',
+      message: 'Activity name:',
+      validate: (v: string) => (v.trim().length > 0 ? true : 'Required.'),
+    },
+    {
+      type: 'input',
+      name: 'cost',
+      message: 'Cost (number):',
+      validate: (v: string) => {
+        const n = Number(v);
+        if (Number.isNaN(n)) return 'Must be a number.';
+        if (n < 0) return 'Must be >= 0.';
+        return true;
+      },
+      filter: (v: string) => Number(v),
+    },
+    {
+      type: 'rawlist',
+      name: 'category',
+      message: 'Category:',
+      choices: [
+        { name: 'food', value: 'food' },
+        { name: 'transport', value: 'transport' },
+        { name: 'sightseeing', value: 'sightseeing' },
+      ],
+    },
+    {
+      type: 'input',
+      name: 'startTime',
+      message: 'Start time (YYYY-MM-DD HH:mm):',
+      validate: (v: string) => {
+        try {
+          parseDateTimeLocal(v.trim());
+          return true;
+        } catch (e) {
+          return e instanceof Error ? e.message : 'Invalid datetime.';
+        }
+      },
+    },
+  ])) as { name: string; cost: number; category: Category; startTime: string };
+
+  const activity: Activity = {
+    id: randomUUID(),
+    name: answers.name.trim(),
+    cost: Number(answers.cost),
+    category: answers.category,
+    startTime: parseDateTimeLocal(answers.startTime.trim()),
+  };
+
+  if (wouldExceedBudget(trip, activity)) {
+    const remaining = (() => {
+      try {
+        return getRemainingBudget(trip);
+      } catch {
+        return undefined;
+      }
+    })();
+
+    const message =
+      remaining !== undefined
+        ? `This activity would exceed your remaining budget (${remaining}). Add anyway?`
+        : 'This activity would exceed your budget. Add anyway?';
+
+    const confirm = (await inquirer.prompt([
+      { type: 'confirm', name: 'proceed', message, default: false },
+    ])) as { proceed: boolean };
+
+    if (!confirm.proceed) {
+      console.log('\nCancelled.\n');
+      await pause();
+      return;
+    }
+  }
+
+  const activities = addActivity(trip, activity);
+  console.log(`\nAdded! You now have ${activities.length} activities.\n`);
+  await pause();
+};
+
+const actionViewActivitiesForDay = async (): Promise<void> => {
+  const trip = await requireActiveTrip();
+  if (!trip) return;
+
+  const answers = (await inquirer.prompt([
+    {
+      type: 'input',
+      name: 'date',
+      message: 'Which day? (YYYY-MM-DD):',
+      validate: (v: string) => {
+        try {
+          parseDateOnly(v.trim());
+          return true;
+        } catch (e) {
+          return e instanceof Error ? e.message : 'Invalid date.';
+        }
+      },
+    },
+  ])) as { date: string };
+
+  const date = parseDateOnly(answers.date.trim());
+  const activities = getActivitiesByDate(trip, date);
+  const sorted = [...activities].sort(
+    (a, b) => a.startTime.getTime() - b.startTime.getTime(),
+  );
+
+  console.log(`\nActivities on ${date.toDateString()}:\n`);
+  printActivities(sorted);
+  await pause();
+};
+
+const actionFilterByCategory = async (): Promise<void> => {
+  const trip = await requireActiveTrip();
+  if (!trip) return;
+
+  const answers = (await inquirer.prompt([
+    {
+      type: 'rawlist',
+      name: 'category',
+      message: 'Pick a category:',
+      choices: [
+        { name: 'food', value: 'food' },
+        { name: 'transport', value: 'transport' },
+        { name: 'sightseeing', value: 'sightseeing' },
+      ],
+    },
+  ])) as { category: Category };
+
+  const activities = filterActivitiesByCategory(trip, answers.category);
+
+  console.log(`\nActivities in category "${answers.category}":\n`);
+  printActivities(activities);
+  await pause();
+};
+
+const actionHighCost = async (): Promise<void> => {
+  const trip = await requireActiveTrip();
+  if (!trip) return;
+
+  const answers = (await inquirer.prompt([
+    {
+      type: 'input',
+      name: 'threshold',
+      message: 'Minimum cost (number):',
+      validate: (v: string) => {
+        const n = Number(v);
+        if (Number.isNaN(n)) return 'Must be a number.';
+        if (n < 0) return 'Must be >= 0.';
+        return true;
+      },
+      filter: (v: string) => Number(v),
+    },
+  ])) as { threshold: number };
+
+  const activities = getHighCostActivities(trip, Number(answers.threshold));
+  const sorted = [...activities].sort((a, b) => b.cost - a.cost);
+
+  console.log(`\nActivities costing >= ${answers.threshold}:\n`);
+  printActivities(sorted);
+  await pause();
+};
+
+const actionViewSorted = async (): Promise<void> => {
+  const trip = await requireActiveTrip();
+  if (!trip) return;
+
+  const sorted = sortActivitiesChronologically(trip);
+  console.log(`\nAll activities for "${trip.destination}" (sorted):\n`);
+  printActivities(sorted);
+  await pause();
+};
+
+const actionTotalCost = async (): Promise<void> => {
+  const trip = await requireActiveTrip();
+  if (!trip) return;
+
+  const total = calculateTotalCost(trip);
+  console.log(`\nTotal cost for "${trip.destination}": ${total}\n`);
+  await pause();
+};
