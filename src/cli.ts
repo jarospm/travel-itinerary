@@ -85,3 +85,25 @@ const printActivities = (activities: Activity[]): void => {
   });
   console.log('');
 };
+
+// trip state helpers
+
+const getActiveTrip = (): Trip | undefined => {
+  if (activeTripId === null) return undefined;
+  return trips.find((t) => t.id === activeTripId);
+};
+
+const requireActiveTrip = async (): Promise<Trip | undefined> => {
+  const active = getActiveTrip();
+  if (active) return active;
+
+  if (trips.length === 0) {
+    console.log('\nYou have no trips yet. Create one first.\n');
+    await pause();
+    return undefined;
+  }
+
+  console.log('\nNo active trip selected.\n');
+  await selectActiveTrip();
+  return getActiveTrip();
+};
