@@ -1,18 +1,30 @@
-import { addActivity } from './itineraryService.js';
-
+// Note imports
 import inquirer from 'inquirer';
-const mainMenu = async () => {
-  const answers = await inquirer.prompt([
-    {
-      type: 'list',
-      name: 'action',
-      message: 'What would you like to do?',
-      choices: ['View Trips', 'Add Activity', 'View Budget', 'Exit'],
-    },
-  ]);
-  // Handle user choices here
-};
-mainMenu();
+import { randomUUID } from 'node:crypto';
 
-const activities = addActivity(trip, activity);
-console.log(`Added! You now have ${activities.length} activities.`);
+import type { Activity, Trip } from './models.js';
+
+import {
+  addActivity,
+  calculateTotalCost,
+  createTrip,
+  filterActivitiesByCategory,
+  getActivitiesByDate,
+  getHighCostActivities,
+  sortActivitiesChronologically,
+} from './itineraryService.js';
+
+import {
+  getRemainingBudget,
+  getSpendingByCategory,
+  setBudget,
+  wouldExceedBudget,
+} from './budgetService.js';
+
+import { getDestinationInfo } from './destinationService.js';
+
+type Category = Activity['category'];
+
+// STATE (In-Memory Store)
+const trips: Trip[] = [];
+let activeTripId: string | null = null;
