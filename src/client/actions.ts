@@ -1,8 +1,8 @@
-// Note imports
 import inquirer from 'inquirer';
 import { randomUUID } from 'node:crypto';
 
-import type { Activity, Trip } from './models.js';
+import type { Activity } from '../models.js';
+import type { Activity as ActivityType } from '../models.js';
 
 import {
   addActivity,
@@ -12,103 +12,65 @@ import {
   getActivitiesByDate,
   getHighCostActivities,
   sortActivitiesChronologically,
-} from './itineraryService.js';
+} from '../itineraryService.js';
 
 import {
   getRemainingBudget,
   getSpendingByCategory,
   setBudget,
   wouldExceedBudget,
-} from './budgetService.js';
+} from '../budgetService.js';
 
-import { getDestinationInfo } from './destinationService.js';
+import { getDestinationInfo } from '../destinationService.js';
 
-type Category = Activity['category'];
+import {
+  parseDateOnly,
+  parseDateTimeLocal,
+  pause,
+  printActivities,
+} from './helpers.js';
+import {
+  trips,
+  setActiveTripId,
+  getActiveTrip,
+  requireActiveTrip,
+} from './state.js';
 
-// STATE (In-Memory Store)
-const trips: Trip[] = [];
-let activeTripId: string | null = null;
+type Category = ActivityType['category'];
 
-//Generic CLI helpers
-const pause = async (): Promise<void> => {
-  await inquirer.prompt([
-    { type: 'input', name: 'pause', message: 'Press Enter to continue...' },
-  ]);
-};
-
-const formatDateTime = (d: Date): string => {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mi = String(d.getMinutes()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd} ${hh}:${mi}`;
-};
-
-const parseDateOnly = (value: string): Date => {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) throw new Error('Invalid date format. Use YYYY-MM-DD.');
-  const year = Number(match[1]);
-  const monthIndex = Number(match[2]) - 1;
-  const day = Number(match[3]);
-  const d = new Date(year, monthIndex, day, 0, 0, 0, 0);
-  if (Number.isNaN(d.getTime())) throw new Error('Invalid date.');
-  return d;
-};
-
-const parseDateTimeLocal = (value: string): Date => {
-  const match = /^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})$/.exec(value);
-  if (!match) throw new Error('Invalid datetime format. Use YYYY-MM-DD HH:mm.');
-  const year = Number(match[1]);
-  const monthIndex = Number(match[2]) - 1;
-  const day = Number(match[3]);
-  const hour = Number(match[4]);
-  const minute = Number(match[5]);
-  const d = new Date(year, monthIndex, day, hour, minute, 0, 0);
-  if (Number.isNaN(d.getTime())) throw new Error('Invalid datetime.');
-  return d;
-};
-
-const printActivities = (activities: Activity[]): void => {
-  if (activities.length === 0) {
-    console.log('\nNo activities found.\n');
+/**
+ * Permite al usuario seleccionar el trip activo desde una lista.
+ * Si no hay trips, muestra mensaje y retorna.
+ */
+export const selectActiveTrip = async (): Promise<void> => {
+  if (trips.length === 0) {
+    console.log('\nNo trips to select.\n');
+    await pause();
     return;
   }
 
-  console.log('');
-  activities.forEach((a, i) => {
-    console.log(
-      `${i + 1}. ${a.name} | ${a.category} | ${a.cost} | ${formatDateTime(
-        a.startTime,
-      )}`,
-    );
-  });
-  console.log('');
-};
+  const answer = (await inquirer.prompt([
+    {
+      type: 'rawlist',
+      name: 'tripId',
+      message: 'Select active trip:',
+      choices: trips.map((t) => ({
+        name: `${t.destination} | ${t.startDate.toDateString()}`,
+        value: t.id,
+      })),
+    },
+  ])) as { tripId: string };
 
-// Note trip state helpers
-
-const getActiveTrip = (): Trip | undefined => {
-  if (activeTripId === null) return undefined;
-  return trips.find((t) => t.id === activeTripId);
-};
-
-const requireActiveTrip = async (): Promise<Trip | undefined> => {
+  setActiveTripId(answer.tripId);
   const active = getActiveTrip();
-  if (active) return active;
-
-  if (trips.length === 0) {
-    console.log('\nYou have no trips yet. Create one first.\n');
-    await pause();
-    return undefined;
-  }
-
-  console.log('\nNo active trip selected.\n');
-  await selectActiveTrip();
-  return getActiveTrip();
+  console.log(`\nActive trip: ${active ? active.destination : 'None'}\n`);
+  await pause();
 };
 
-const actionCreateTrip = async (): Promise<void> => {
+/**
+ * Crea un trip nuevo, lo agrega al store y lo marca como activo.
+ */
+export const actionCreateTrip = async (): Promise<void> => {
   const answers = (await inquirer.prompt([
     {
       type: 'input',
@@ -138,7 +100,7 @@ const actionCreateTrip = async (): Promise<void> => {
   );
 
   trips.push(trip);
-  activeTripId = trip.id;
+  setActiveTripId(trip.id);
 
   console.log(
     `\nCreated trip "${trip.destination}" starting ${trip.startDate.toDateString()}.\nActive trip set.\n`,
@@ -146,16 +108,18 @@ const actionCreateTrip = async (): Promise<void> => {
   await pause();
 };
 
-const actionViewTrips = async (): Promise<void> => {
+export const actionViewTrips = async (): Promise<void> => {
   if (trips.length === 0) {
     console.log('\nNo trips yet.\n');
     await pause();
     return;
   }
 
+  const activeId = getActiveTrip()?.id ?? null;
+
   console.log('');
   trips.forEach((t, i) => {
-    const activeMark = t.id === activeTripId ? ' (active)' : '';
+    const activeMark = t.id === activeId ? ' (active)' : '';
     console.log(
       `${i + 1}. ${t.destination} | ${t.startDate.toDateString()}${activeMark}`,
     );
@@ -164,34 +128,9 @@ const actionViewTrips = async (): Promise<void> => {
   await pause();
 };
 
-const selectActiveTrip = async (): Promise<void> => {
-  if (trips.length === 0) {
-    console.log('\nNo trips to select.\n');
-    await pause();
-    return;
-  }
-
-  const answer = (await inquirer.prompt([
-    {
-      type: 'rawlist',
-      name: 'tripId',
-      message: 'Select active trip:',
-      choices: trips.map((t) => ({
-        name: `${t.destination} | ${t.startDate.toDateString()}`,
-        value: t.id,
-      })),
-    },
-  ])) as { tripId: string };
-
-  activeTripId = answer.tripId;
-  const active = getActiveTrip();
-  console.log(`\nActive trip: ${active ? active.destination : 'None'}\n`);
-  await pause();
-};
-
 // ACTIVITY ACTIONS
-const actionAddActivity = async (): Promise<void> => {
-  const trip = await requireActiveTrip();
+export const actionAddActivity = async (): Promise<void> => {
+  const trip = await requireActiveTrip(selectActiveTrip);
   if (!trip) return;
 
   const answers = (await inquirer.prompt([
@@ -276,8 +215,8 @@ const actionAddActivity = async (): Promise<void> => {
   await pause();
 };
 
-const actionViewActivitiesForDay = async (): Promise<void> => {
-  const trip = await requireActiveTrip();
+export const actionViewActivitiesForDay = async (): Promise<void> => {
+  const trip = await requireActiveTrip(selectActiveTrip);
   if (!trip) return;
 
   const answers = (await inquirer.prompt([
@@ -307,8 +246,8 @@ const actionViewActivitiesForDay = async (): Promise<void> => {
   await pause();
 };
 
-const actionFilterByCategory = async (): Promise<void> => {
-  const trip = await requireActiveTrip();
+export const actionFilterByCategory = async (): Promise<void> => {
+  const trip = await requireActiveTrip(selectActiveTrip);
   if (!trip) return;
 
   const answers = (await inquirer.prompt([
@@ -325,14 +264,13 @@ const actionFilterByCategory = async (): Promise<void> => {
   ])) as { category: Category };
 
   const activities = filterActivitiesByCategory(trip, answers.category);
-
   console.log(`\nActivities in category "${answers.category}":\n`);
   printActivities(activities);
   await pause();
 };
 
-const actionHighCost = async (): Promise<void> => {
-  const trip = await requireActiveTrip();
+export const actionHighCost = async (): Promise<void> => {
+  const trip = await requireActiveTrip(selectActiveTrip);
   if (!trip) return;
 
   const answers = (await inquirer.prompt([
@@ -358,8 +296,8 @@ const actionHighCost = async (): Promise<void> => {
   await pause();
 };
 
-const actionViewSorted = async (): Promise<void> => {
-  const trip = await requireActiveTrip();
+export const actionViewSorted = async (): Promise<void> => {
+  const trip = await requireActiveTrip(selectActiveTrip);
   if (!trip) return;
 
   const sorted = sortActivitiesChronologically(trip);
@@ -368,8 +306,8 @@ const actionViewSorted = async (): Promise<void> => {
   await pause();
 };
 
-const actionTotalCost = async (): Promise<void> => {
-  const trip = await requireActiveTrip();
+export const actionTotalCost = async (): Promise<void> => {
+  const trip = await requireActiveTrip(selectActiveTrip);
   if (!trip) return;
 
   const total = calculateTotalCost(trip);
@@ -377,9 +315,9 @@ const actionTotalCost = async (): Promise<void> => {
   await pause();
 };
 
-// Destination Actions
-const actionDestinationInfo = async (): Promise<void> => {
-  const trip = await requireActiveTrip();
+// DESTINATION
+export const actionDestinationInfo = async (): Promise<void> => {
+  const trip = await requireActiveTrip(selectActiveTrip);
   if (!trip) return;
 
   try {
@@ -396,9 +334,9 @@ const actionDestinationInfo = async (): Promise<void> => {
   await pause();
 };
 
-// Budget Actions
-const actionSetBudget = async (): Promise<void> => {
-  const trip = await requireActiveTrip();
+// BUDGET
+export const actionSetBudget = async (): Promise<void> => {
+  const trip = await requireActiveTrip(selectActiveTrip);
   if (!trip) return;
 
   const answers = (await inquirer.prompt([
@@ -421,8 +359,8 @@ const actionSetBudget = async (): Promise<void> => {
   await pause();
 };
 
-const actionRemainingBudget = async (): Promise<void> => {
-  const trip = await requireActiveTrip();
+export const actionRemainingBudget = async (): Promise<void> => {
+  const trip = await requireActiveTrip(selectActiveTrip);
   if (!trip) return;
 
   try {
@@ -435,8 +373,8 @@ const actionRemainingBudget = async (): Promise<void> => {
   await pause();
 };
 
-const actionSpendingBreakdown = async (): Promise<void> => {
-  const trip = await requireActiveTrip();
+export const actionSpendingBreakdown = async (): Promise<void> => {
+  const trip = await requireActiveTrip(selectActiveTrip);
   if (!trip) return;
 
   const breakdown = getSpendingByCategory(trip);
@@ -446,99 +384,3 @@ const actionSpendingBreakdown = async (): Promise<void> => {
   console.log(`sightseeing: ${breakdown.sightseeing}\n`);
   await pause();
 };
-
-// MAIN MENU
-const mainMenu = async (): Promise<void> => {
-  console.log('\nTravel Itinerary CLI\n');
-
-  let exit = false;
-  while (!exit) {
-    const active = getActiveTrip();
-
-    const answers = (await inquirer.prompt([
-      {
-        type: 'rawlist',
-        name: 'action',
-        message: active
-          ? `What would you like to do? (Active: ${active.destination})`
-          : 'What would you like to do?',
-        choices: [
-          { name: 'Create a new trip', value: 'createTrip' },
-          { name: 'View trips', value: 'viewTrips' },
-          { name: 'Select active trip', value: 'selectTrip' },
-          new inquirer.Separator(),
-          { name: 'Add an activity', value: 'addActivity' },
-          { name: 'View activities for a specific day', value: 'viewByDay' },
-          {
-            name: 'View activities sorted chronologically',
-            value: 'viewSorted',
-          },
-          { name: 'Filter activities by category', value: 'filterCategory' },
-          {
-            name: 'Identify high-cost activities (threshold)',
-            value: 'highCost',
-          },
-          { name: 'Calculate total cost of trip', value: 'totalCost' },
-          new inquirer.Separator(),
-          { name: 'Get destination info (currency, flag)', value: 'destInfo' },
-          { name: 'Set a budget', value: 'setBudget' },
-          { name: 'View remaining budget', value: 'remainingBudget' },
-          { name: 'View spending breakdown by category', value: 'breakdown' },
-          new inquirer.Separator(),
-          { name: 'Exit', value: 'exit' },
-        ],
-      },
-    ])) as { action: string };
-
-    switch (answers.action) {
-      case 'createTrip':
-        await actionCreateTrip();
-        break;
-      case 'viewTrips':
-        await actionViewTrips();
-        break;
-      case 'selectTrip':
-        await selectActiveTrip();
-        break;
-      case 'addActivity':
-        await actionAddActivity();
-        break;
-      case 'viewByDay':
-        await actionViewActivitiesForDay();
-        break;
-      case 'viewSorted':
-        await actionViewSorted();
-        break;
-      case 'filterCategory':
-        await actionFilterByCategory();
-        break;
-      case 'highCost':
-        await actionHighCost();
-        break;
-      case 'totalCost':
-        await actionTotalCost();
-        break;
-      case 'destInfo':
-        await actionDestinationInfo();
-        break;
-      case 'setBudget':
-        await actionSetBudget();
-        break;
-      case 'remainingBudget':
-        await actionRemainingBudget();
-        break;
-      case 'breakdown':
-        await actionSpendingBreakdown();
-        break;
-      case 'exit':
-        exit = true;
-        break;
-      default:
-        break;
-    }
-  }
-
-  console.log('\nGoodbye!\n');
-};
-
-await mainMenu();
