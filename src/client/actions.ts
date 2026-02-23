@@ -39,8 +39,8 @@ import {
 type Category = ActivityType['category'];
 
 /**
- * Permite al usuario seleccionar el trip activo desde una lista.
- * Si no hay trips, muestra mensaje y retorna.
+ * Allows the user to select the active trip from a list.
+ * If no trips exist, a message is displayed and the function returns.
  */
 export const selectActiveTrip = async (): Promise<void> => {
   if (trips.length === 0) {
@@ -68,7 +68,8 @@ export const selectActiveTrip = async (): Promise<void> => {
 };
 
 /**
- * Crea un trip nuevo, lo agrega al store y lo marca como activo.
+ * Creates a new trip, adds it to the in-memory store,
+ * and sets it as the active trip.
  */
 export const actionCreateTrip = async (): Promise<void> => {
   const answers = (await inquirer.prompt([

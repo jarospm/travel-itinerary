@@ -18,7 +18,8 @@ import {
 } from './actions.js';
 
 /**
- * Punto de entrada del CLI: muestra el menú principal y despacha acciones.
+ * CLI entry point: displays the main menu and dispatches actions
+ * based on the user's selection.
  */
 const mainMenu = async (): Promise<void> => {
   console.log('\nTravel Itinerary CLI\n');

@@ -2,25 +2,25 @@ import type { Trip } from '../models.js';
 import { pause } from './helpers.js';
 
 /**
- * Store en memoria del CLI.
- * Nota: esto se resetea cada vez que el proceso termina.
+ * In-memory store used by the CLI.
+ * Note: this data is reset every time the process terminates.
  */
 export const trips: Trip[] = [];
 export let activeTripId: string | null = null;
 
 /**
- * Setea el viaje activo por id.
+ * Sets the active trip by its ID.
  *
- * @param tripId - ID del trip a marcar como activo
+ * @param tripId - The ID of the trip to mark as active
  */
 export const setActiveTripId = (tripId: string | null): void => {
   activeTripId = tripId;
 };
 
 /**
- * Obtiene el trip activo actual.
+ * Returns the currently active trip.
  *
- * @returns Trip activo o undefined si no hay seleccionado
+ * @returns The active Trip, or undefined if none is selected
  */
 export const getActiveTrip = (): Trip | undefined => {
   if (activeTripId === null) return undefined;
@@ -28,13 +28,15 @@ export const getActiveTrip = (): Trip | undefined => {
 };
 
 /**
- * Garantiza que exista un trip activo.
- * - Si ya hay uno, lo retorna.
- * - Si no hay trips, muestra mensaje y retorna undefined.
- * - Si hay trips pero no activo, invoca el selector para que el usuario elija.
+ * Ensures that an active trip exists.
+ * - If an active trip is already set, it returns it.
+ * - If no trips exist, it displays a message and returns undefined.
+ * - If trips exist but none is active, it invokes the selector
+ *   so the user can choose one.
  *
- * @param selectActiveTrip - Callback que muestra el prompt y setea el trip activo.
- * @returns Trip activo o undefined si no se pudo obtener
+ * @param selectActiveTrip - Callback that prompts the user
+ * and sets the active trip.
+ * @returns The active Trip, or undefined if one could not be obtained
  *
  * @example
  * const trip = await requireActiveTrip(selectActiveTrip);

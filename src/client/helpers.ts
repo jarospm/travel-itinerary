@@ -2,9 +2,9 @@ import inquirer from 'inquirer';
 import type { Activity } from '../models.js';
 
 /**
- * Pausa la ejecución del CLI hasta que el usuario presione Enter.
+ * Pauses CLI execution until the user presses Enter.
  *
- * @returns Promise<void>
+ * @returns A promise that resolves once the user continues.
  */
 export const pause = async (): Promise<void> => {
   await inquirer.prompt([
@@ -13,11 +13,11 @@ export const pause = async (): Promise<void> => {
 };
 
 /**
- * Formatea un Date en string legible para consola.
- * Formato: YYYY-MM-DD HH:mm
+ * Formats a Date object into a human-readable string for console output.
+ * Format: YYYY-MM-DD HH:mm
  *
- * @param d - Fecha a formatear
- * @returns String con el formato YYYY-MM-DD HH:mm
+ * @param d - The Date to format
+ * @returns A string in the format YYYY-MM-DD HH:mm
  */
 export const formatDateTime = (d: Date): string => {
   const yyyy = d.getFullYear();
@@ -29,15 +29,16 @@ export const formatDateTime = (d: Date): string => {
 };
 
 /**
- * Parsea una fecha en formato YYYY-MM-DD (hora local 00:00).
+ * Parses a date string in the format YYYY-MM-DD (local time at 00:00).
  *
- * @param value - Texto con formato YYYY-MM-DD
- * @returns Date válido
- * @throws Error si el formato o el valor no es válido
+ * @param value - A string in the format YYYY-MM-DD
+ * @returns A valid Date object
+ * @throws Error if the format is invalid or the date value is not valid
  *
  * @example
  * parseDateOnly("2026-02-23")
  */
+
 export const parseDateOnly = (value: string): Date => {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!match) throw new Error('Invalid date format. Use YYYY-MM-DD.');
@@ -53,15 +54,16 @@ export const parseDateOnly = (value: string): Date => {
 };
 
 /**
- * Parsea un datetime en formato local: "YYYY-MM-DD HH:mm".
+ * Parses a local datetime string in the format "YYYY-MM-DD HH:mm".
  *
- * @param value - Texto con formato YYYY-MM-DD HH:mm
- * @returns Date válido en hora local
- * @throws Error si el formato o el valor no es válido
+ * @param value - A string in the format YYYY-MM-DD HH:mm
+ * @returns A valid Date object in local time
+ * @throws Error if the format is invalid or the datetime value is not valid
  *
  * @example
  * parseDateTimeLocal("2026-02-23 18:30")
  */
+
 export const parseDateTimeLocal = (value: string): Date => {
   const match = /^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})$/.exec(value);
   if (!match) throw new Error('Invalid datetime format. Use YYYY-MM-DD HH:mm.');
@@ -79,11 +81,12 @@ export const parseDateTimeLocal = (value: string): Date => {
 };
 
 /**
- * Imprime una lista de actividades con índice y campos clave.
+ * Prints a list of activities with an index and key fields.
  *
- * @param activities - Actividades a imprimir
+ * @param activities - The activities to display
  * @returns void
  */
+
 export const printActivities = (activities: Activity[]): void => {
   if (activities.length === 0) {
     console.log('\nNo activities found.\n');
