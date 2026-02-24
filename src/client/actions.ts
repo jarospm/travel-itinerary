@@ -2,7 +2,6 @@ import inquirer from 'inquirer';
 import { randomUUID } from 'node:crypto';
 
 import type { Activity } from '../models.js';
-import type { Activity as ActivityType } from '../models.js';
 
 import {
   addActivity,
@@ -36,11 +35,11 @@ import {
   requireActiveTrip,
 } from './state.js';
 
-type Category = ActivityType['category'];
+type Category = Activity['category'];
 
 /**
- * Allows the user to select the active trip from a list.
- * If no trips exist, a message is displayed and the function returns.
+ * Permite al usuario seleccionar el trip activo desde una lista.
+ * Si no hay trips, muestra mensaje y retorna.
  */
 export const selectActiveTrip = async (): Promise<void> => {
   if (trips.length === 0) {
@@ -68,8 +67,7 @@ export const selectActiveTrip = async (): Promise<void> => {
 };
 
 /**
- * Creates a new trip, adds it to the in-memory store,
- * and sets it as the active trip.
+ * Crea un trip nuevo, lo agrega al store y lo marca como activo.
  */
 export const actionCreateTrip = async (): Promise<void> => {
   const answers = (await inquirer.prompt([
