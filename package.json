@@ -4,8 +4,8 @@
   "description": "A collaborative CLI application for planning trips, managing activities, and tracking travel expenses",
   "main": "dist/index.js",
   "scripts": {
-    "start": "tsx src/cli.ts",
-    "dev": "tsx src/cli.ts",
+    "start": "tsx src/client/cli.ts",
+    "dev": "tsx src/client/cli.ts",
     "build": "tsc",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
